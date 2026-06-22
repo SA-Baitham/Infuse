@@ -1,6 +1,5 @@
 import streamlit as st
 import os
-import httpx
 from src.providers import ProviderRegistry, ConfigField
 from src import config as cfg
 
@@ -152,31 +151,26 @@ def render_connection_dialog(provider_id: str):
                 key=f"cfg_{provider_id}_{field.key}",
             )
 
-    # Dynamic model fetching for Ollama
-    ollama_models = None
-    if provider_id == "ollama":
-        base_url = config_values.get("base_url", "").rstrip("/") or "http://localhost:11434"
-        if st.button("🔍 Fetch Models from Server", key=f"fetch_models_{provider_id}", use_container_width=True):
-            with st.spinner("Fetching models..."):
-                try:
-                    r = httpx.get(f"{base_url}/api/tags", timeout=5)
-                    r.raise_for_status()
-                    ollama_models = [m["name"] for m in r.json().get("models", [])]
-                    if not ollama_models:
-                        st.warning("No models found on the server.")
-                except Exception as e:
-                    st.error(f"Failed to connect: {e}")
-        if ollama_models:
-            st.success(f"Found {len(ollama_models)} models")
-            st.session_state[f"ollama_models_{provider_id}"] = ollama_models
+    fetched_models_key = f"fetched_models_{provider_id}"
+    if st.button("🔍 Fetch Models from API", key=f"fetch_models_{provider_id}", use_container_width=True):
+        with st.spinner("Fetching models..."):
+            try:
+                models_result = provider_cls.fetch_models(config_values)
+                if models_result:
+                    st.session_state[fetched_models_key] = models_result
+                    st.success(f"Found {len(models_result)} models")
+                else:
+                    st.warning("No models found or unable to reach API.")
+            except Exception as e:
+                st.error(f"Failed: {e}")
 
-    models = provider_cls.models
-    if provider_id == "ollama":
-        cached = st.session_state.get(f"ollama_models_{provider_id}")
-        if cached:
-            models = cached
+    models = provider_cls.models[:]
+    cached = st.session_state.get(fetched_models_key)
+    if cached:
+        models = cached
     if not models:
         models = ["llama3", "mistral", "qwen2.5", "codellama"]
+
     selected_model = st.selectbox(
         "Default model",
         models,

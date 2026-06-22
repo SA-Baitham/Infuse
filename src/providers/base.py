@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Literal
+import httpx
 
 
 @dataclass
@@ -43,6 +44,28 @@ class BaseProvider(ABC):
     @classmethod
     def from_config(cls, config: dict) -> "BaseProvider":
         return cls(config)
+
+    @classmethod
+    def fetch_models(cls, config: dict) -> list[str] | None:
+        """Fetch available models from the provider's API.
+        Override in subclasses. Returns list of model IDs or None."""
+        return None
+
+
+def fetch_openai_compatible_models(base_url: str, api_key: str | None = None) -> list[str] | None:
+    """Fetch models from an OpenAI-compatible /v1/models endpoint."""
+    try:
+        headers = {}
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
+        url = base_url.rstrip("/") + "/models"
+        r = httpx.get(url, headers=headers, timeout=10)
+        r.raise_for_status()
+        data = r.json()
+        models = [m["id"] for m in data.get("data", [])]
+        return sorted(models) if models else None
+    except Exception:
+        return None
 
 
 class ProviderRegistry:

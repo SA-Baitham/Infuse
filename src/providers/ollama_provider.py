@@ -19,14 +19,16 @@ class OllamaProvider(BaseProvider):
                        placeholder="http://localhost:11434", env_var="OLLAMA_BASE_URL"),
         ]
 
-    def _fetch_models(self):
+    @classmethod
+    def fetch_models(cls, config: dict) -> list[str] | None:
+        base = config.get("base_url", "").rstrip("/") or "http://localhost:11434"
         try:
-            r = httpx.get(f"{self.config.get('base_url', 'http://localhost:11434')}/api/tags",
-                         timeout=5)
+            r = httpx.get(f"{base}/api/tags", timeout=5)
             r.raise_for_status()
-            return [m["name"] for m in r.json().get("models", [])]
+            models = [m["name"] for m in r.json().get("models", [])]
+            return models if models else None
         except Exception:
-            return ["llama3", "mistral", "qwen2.5", "codellama"]
+            return None
 
     def chat(self, messages: list[dict], model: str | None = None, **kwargs) -> str:
         url = f"{self.config.get('base_url', 'http://localhost:11434')}/api/chat"

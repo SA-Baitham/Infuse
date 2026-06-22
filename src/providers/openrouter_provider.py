@@ -1,4 +1,4 @@
-from .base import BaseProvider, ConfigField, ProviderMeta
+from .base import BaseProvider, ConfigField, ProviderMeta, fetch_openai_compatible_models
 
 
 class OpenRouterProvider(BaseProvider):
@@ -26,6 +26,11 @@ class OpenRouterProvider(BaseProvider):
             ConfigField(key="base_url", label="Base URL (optional)", type="text",
                        placeholder="https://openrouter.ai/api/v1", required=False),
         ]
+
+    @classmethod
+    def fetch_models(cls, config: dict) -> list[str] | None:
+        base = config.get("base_url") or "https://openrouter.ai/api/v1"
+        return fetch_openai_compatible_models(base, config.get("api_key"))
 
     def chat(self, messages: list[dict], model: str | None = None, **kwargs) -> str:
         import openai

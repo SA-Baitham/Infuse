@@ -1,4 +1,4 @@
-from .base import BaseProvider, ConfigField, ProviderMeta
+from .base import BaseProvider, ConfigField, ProviderMeta, fetch_openai_compatible_models
 
 
 class NVIDIAProvider(BaseProvider):
@@ -25,6 +25,11 @@ class NVIDIAProvider(BaseProvider):
             ConfigField(key="base_url", label="Base URL (optional)", type="text",
                        placeholder="https://integrate.api.nvidia.com/v1", required=False),
         ]
+
+    @classmethod
+    def fetch_models(cls, config: dict) -> list[str] | None:
+        base = config.get("base_url") or "https://integrate.api.nvidia.com/v1"
+        return fetch_openai_compatible_models(base, config.get("api_key"))
 
     def chat(self, messages: list[dict], model: str | None = None, **kwargs) -> str:
         import openai

@@ -4,7 +4,7 @@ from src.providers import ProviderRegistry
 from src import config as cfg
 
 
-def run_health_check(provider_id: str, check_type: str, wiki_dir: str) -> str:
+def run_health_check(provider_id: str, check_type: str, wiki_dir: str, model: str | None = None) -> str:
     provider_cls = ProviderRegistry.get(provider_id)
     if not provider_cls:
         return "Provider not found."
@@ -40,7 +40,7 @@ def run_health_check(provider_id: str, check_type: str, wiki_dir: str) -> str:
         result = provider.chat([
             {"role": "system", "content": "You are a wiki quality analyst. Be thorough and specific."},
             {"role": "user", "content": f"Wiki articles:\n\n{summary_text}\n\n{prompt}"},
-        ], model=pconfig.get("model"))
+        ], model=model or pconfig.get("model"))
         return result
     except Exception as e:
         return f"Health check failed: {e}"

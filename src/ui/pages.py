@@ -32,6 +32,34 @@ def _provider_select(providers: dict, key: str) -> str:
     )
 
 
+def _model_select(provider_id: str, providers: dict, key: str) -> str:
+    """Model selectbox with a refresh button to fetch models from API."""
+    pcls = ProviderRegistry.get(provider_id)
+    pconfig = providers.get(provider_id, {})
+    models = pcls.models[:] if pcls and pcls.models else pconfig.get("models", ["gpt-4o-mini"])
+
+    refresh_key = f"refresh_{key}"
+    if st.button("🔄 Refresh Models", key=refresh_key, use_container_width=True):
+        with st.spinner("Fetching models..."):
+            try:
+                result = pcls.fetch_models(pconfig)
+                if result:
+                    st.session_state[refresh_key] = result
+                    st.success(f"Found {len(result)} models")
+                else:
+                    st.warning("No models found.")
+            except Exception as e:
+                st.error(f"Failed: {e}")
+
+    cached = st.session_state.get(refresh_key)
+    if cached:
+        models = cached
+    if not models:
+        models = ["gpt-4o-mini"]
+
+    return st.selectbox("Model", models, key=key)
+
+
 def render_dashboard():
     st.title("📊 Dashboard")
 
@@ -162,10 +190,7 @@ def render_ingest():
 
     provider_id = _provider_select(providers, "ingest_provider")
     if provider_id:
-        pcls = ProviderRegistry.get(provider_id)
-        pconfig = providers[provider_id]
-        models = pcls.models if pcls and pcls.models else pconfig.get("models", ["gpt-4o-mini"])
-        model = st.selectbox("Model", models)
+        model = _model_select(provider_id, providers, "ingest_model")
 
         if st.button("🚀 Compile Raw → Wiki", type="primary", use_container_width=True):
             with st.spinner("Compiling wiki articles from raw documents..."):
@@ -217,11 +242,7 @@ def render_qa():
         return
 
     provider_id = _provider_select(providers, "qa_provider")
-    if provider_id:
-        pcls = ProviderRegistry.get(provider_id)
-        pconfig = providers[provider_id]
-        models = pcls.models if pcls and pcls.models else pconfig.get("models", ["gpt-4o-mini"])
-        model = st.selectbox("Model", models, key="qa_model")
+    model = _model_select(provider_id, providers, "qa_model")
 
     question = st.text_area("Your question",
                            placeholder="e.g. What are the key concepts and connections in this research area?",
@@ -262,6 +283,7 @@ def render_health():
         return
 
     provider_id = _provider_select(providers, "health_provider")
+    model = _model_select(provider_id, providers, "health_model")
 
     check_type = st.selectbox("Check type", [
         "Full health check",
@@ -272,7 +294,7 @@ def render_health():
 
     if st.button("🔍 Run Check", type="primary", use_container_width=True):
         with st.spinner("Running health check..."):
-            results = run_health_check(provider_id, check_type, WIKI_DIR)
+            results = run_health_check(provider_id, check_type, WIKI_DIR, model)
         st.markdown("### Results")
         st.markdown(results)
 
@@ -299,10 +321,11 @@ def render_output():
     topic = st.text_input("Topic or question", placeholder="What should this output be about?")
 
     provider_id = _provider_select(providers, "output_provider")
+    model = _model_select(provider_id, providers, "output_model")
 
     if topic and st.button("Generate", type="primary", use_container_width=True):
         with st.spinner(f"Generating {output_type}..."):
-            result = generate_output(provider_id, output_type, topic, WIKI_DIR, OUTPUT_DIR)
+            result = generate_output(provider_id, output_type, topic, WIKI_DIR, OUTPUT_DIR, model)
         st.success(f"✅ Output saved to: {result}")
         if os.path.exists(result):
             with open(result) as f:

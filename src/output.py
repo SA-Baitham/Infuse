@@ -4,7 +4,7 @@ from src.providers import ProviderRegistry
 from src import config as cfg
 
 
-def generate_output(provider_id: str, output_type: str, topic: str, wiki_dir: str, output_dir: str) -> str:
+def generate_output(provider_id: str, output_type: str, topic: str, wiki_dir: str, output_dir: str, model: str | None = None) -> str:
     provider_cls = ProviderRegistry.get(provider_id)
     if not provider_cls:
         return ""
@@ -35,7 +35,7 @@ def generate_output(provider_id: str, output_type: str, topic: str, wiki_dir: st
         result = provider.chat([
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": f"Based on this wiki content, {topic}:\n\n{context_text}"},
-        ], model=pconfig.get("model"))
+        ], model=model or pconfig.get("model"))
 
         ext = "md"
         if output_type == "Matplotlib Visualization":

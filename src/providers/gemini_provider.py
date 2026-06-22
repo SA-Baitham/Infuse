@@ -1,4 +1,5 @@
 from .base import BaseProvider, ConfigField, ProviderMeta
+import httpx
 
 
 class GeminiProvider(BaseProvider):
@@ -20,7 +21,26 @@ class GeminiProvider(BaseProvider):
             ConfigField(key="api_key", label="API Key", type="password", placeholder="AIza...", env_var="GEMINI_API_KEY"),
         ]
 
+    @classmethod
+    def fetch_models(cls, config: dict) -> list[str] | None:
+        api_key = config.get("api_key")
+        if not api_key:
+            return None
+        try:
+            r = httpx.get(
+                "https://generativelanguage.googleapis.com/v1/models",
+                params={"key": api_key},
+                timeout=10,
+            )
+            r.raise_for_status()
+            models = [m["name"].replace("models/", "") for m in r.json().get("models", [])]
+            supported = [m for m in models if "gemini" in m]
+            return sorted(supported) if supported else None
+        except Exception:
+            return None
+
     def chat(self, messages: list[dict], model: str | None = None, **kwargs) -> str:
+
         from google import genai
         client = genai.Client(api_key=self.config.get("api_key"))
         contents = []

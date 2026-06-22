@@ -1,4 +1,5 @@
 from .base import BaseProvider, ConfigField, ProviderMeta
+import httpx
 
 
 class AnthropicProvider(BaseProvider):
@@ -20,6 +21,23 @@ class AnthropicProvider(BaseProvider):
         return [
             ConfigField(key="api_key", label="API Key", type="password", placeholder="sk-ant-...", env_var="ANTHROPIC_API_KEY"),
         ]
+
+    @classmethod
+    def fetch_models(cls, config: dict) -> list[str] | None:
+        api_key = config.get("api_key")
+        if not api_key:
+            return None
+        try:
+            r = httpx.get(
+                "https://api.anthropic.com/v1/models",
+                headers={"x-api-key": api_key, "anthropic-version": "2023-06-01"},
+                timeout=10,
+            )
+            r.raise_for_status()
+            models = [m["id"] for m in r.json().get("data", [])]
+            return sorted(models) if models else None
+        except Exception:
+            return None
 
     def chat(self, messages: list[dict], model: str | None = None, **kwargs) -> str:
         import anthropic
