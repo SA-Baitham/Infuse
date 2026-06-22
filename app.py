@@ -12,6 +12,7 @@ from src.ui.pages import (
     render_qa,
     render_health,
     render_output,
+    render_chat,
     render_settings,
 )
 from src.providers import ProviderRegistry
@@ -42,6 +43,7 @@ with st.sidebar:
 
     pages = {
         "Dashboard": "📊",
+        "Chat": "💬",
         "Ingest": "📥",
         "Wiki": "📚",
         "Q&A": "❓",
@@ -103,6 +105,7 @@ with st.sidebar:
 
 page_routes = {
     "Dashboard": render_dashboard,
+    "Chat": render_chat,
     "Ingest": render_ingest,
     "Wiki": render_wiki,
     "Q&A": render_qa,

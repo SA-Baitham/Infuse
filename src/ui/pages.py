@@ -333,6 +333,69 @@ def render_output():
             st.markdown(content)
 
 
+def render_chat():
+    st.title("💬 Chat")
+    st.markdown("Chat directly with the active provider's model.")
+
+    providers = cfg.get_connected_providers()
+    if not providers:
+        st.warning("No providers connected. Go to **Settings** to add one first.")
+        return
+
+    active = st.session_state.get("active_provider")
+    if not active or active not in providers:
+        st.warning("Select a provider in the sidebar first.")
+        return
+
+    pcls = ProviderRegistry.get(active)
+    pconfig = providers[active]
+    name = pcls.meta.name if pcls else active
+    icon = pcls.meta.icon if pcls else "🔌"
+    model = pconfig.get("model", "unknown")
+
+    st.markdown(f"{icon} **{name}** — model: `{model}`")
+
+    if "chat_messages" not in st.session_state:
+        st.session_state.chat_messages = [
+            {"role": "system", "content": "You are a helpful research assistant. Answer questions clearly and concisely."},
+        ]
+
+    for msg in st.session_state.chat_messages:
+        if msg["role"] == "system":
+            continue
+        role_class = "assistant" if msg["role"] == "assistant" else "user"
+        st.markdown(
+            f'<div class="chat-message {role_class}">{"**You:**" if msg["role"] == "user" else "**Assistant:**"}<br>{msg["content"]}</div>',
+            unsafe_allow_html=True,
+        )
+
+    with st.container():
+        col1, col2 = st.columns([5, 1])
+        with col1:
+            prompt = st.text_input("Message", placeholder="Type your message...", key="chat_input",
+                                  label_visibility="collapsed")
+        with col2:
+            send = st.button("Send", type="primary", use_container_width=True)
+
+        if send and prompt:
+            st.session_state.chat_messages.append({"role": "user", "content": prompt})
+            provider = pcls.from_config(pconfig)
+            try:
+                with st.spinner("Thinking..."):
+                    reply = provider.chat(st.session_state.chat_messages, model=model)
+                st.session_state.chat_messages.append({"role": "assistant", "content": reply})
+            except Exception as e:
+                st.session_state.chat_messages.append({"role": "assistant", "content": f"Error: {e}"})
+            st.rerun()
+
+    if len(st.session_state.chat_messages) > 1:
+        if st.button("🗑️ Clear conversation"):
+            st.session_state.chat_messages = [
+                {"role": "system", "content": "You are a helpful research assistant. Answer questions clearly and concisely."},
+            ]
+            st.rerun()
+
+
 def render_settings():
     st.title("⚙️ Settings")
     st.markdown("Manage LLM providers — add, configure, or disconnect them.")
