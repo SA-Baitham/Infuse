@@ -1,4 +1,4 @@
-# LLM Knowledge Base
+# Infuse
 
 A Streamlit-powered personal knowledge base system. LLMs ingest source documents, compile them into a structured wiki of markdown files, and enable Q&A, health checks, and visual output generation.
 

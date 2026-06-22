@@ -21,8 +21,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 st.set_page_config(
-    page_title="LLM Knowledge Base",
-    page_icon="🧠",
+    page_title="Infuse",
+    page_icon="💉",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -36,7 +36,7 @@ if "active_provider" not in st.session_state:
 
 with st.sidebar:
     st.markdown(
-        '<div class="sidebar-logo">🧠 <span>Knowledge Base</span></div>',
+        '<div class="sidebar-logo">💉 <span>Infuse</span></div>',
         unsafe_allow_html=True,
     )
 
@@ -98,7 +98,7 @@ with st.sidebar:
         st.caption("No providers connected")
 
     st.divider()
-    st.caption("LLM Knowledge Base v0.1")
+    st.caption("Infuse v0.1")
     st.caption("Raw → Wiki → Q&A → Visualize")
 
 page_routes = {

@@ -1,4 +1,4 @@
-# Contributing to LLM Knowledge Base
+# Contributing to Infuse
 
 Thanks for stopping by! This project is in its early stages and all contributions are welcome.
 
